@@ -1,16 +1,21 @@
-import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 
-import uk.co.caprica.vlcj.binding.LibVlc;
-import uk.co.caprica.vlcj.runtime.RuntimeUtil;
-
-import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JRadioButton;
-import javax.swing.JToggleButton;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JWindow;
 
 import com.sun.jna.Native;
 import com.sun.jna.NativeLibrary;
+
+import uk.co.caprica.vlcj.binding.LibVlc;
+import uk.co.caprica.vlcj.component.EmbeddedMediaPlayerComponent;
+import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
+import uk.co.caprica.vlcj.runtime.RuntimeUtil;
 
 public class Main {
 
@@ -23,25 +28,35 @@ public class Main {
 		loadVlcNatives();
 		
 		JFrame frame = new JFrame("5495_Dashboard");
+
+		EmbeddedMediaPlayerComponent videoPlayer = new EmbeddedMediaPlayerComponent();
+		frame.add(videoPlayer);
 		
-		float value = 999999901;
+		JMenuBar menuBar = new JMenuBar();
+		JMenu file = new JMenu("File");
+		JMenuItem quit = new JMenuItem("Quit");
+		quit.addActionListener(ae -> { System.exit(0); });
+		file.add(quit);
+		menuBar.add(file);
 		
-		ValueLabel label2 = new ValueLabel("Your Cookie Count");
-		label2.setValue(value);
-		frame.add(label2, BorderLayout.WEST);
-		
-		JLabel label = new JLabel("GET TO 15,000");
-		frame.add(label, BorderLayout.NORTH);
-		
-		JButton button2 = new JButton("CLICK FOR COOKIES");
-		button2.addActionListener(event -> {
-			label2.setValue(label2.getValue() + 15);
-		});
-		frame.add(button2);
-		
-		frame.setSize(800, 600);
+		frame.setJMenuBar(menuBar);
+		frame.setUndecorated(true);
+		frame.setSize(1600, 660);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setVisible(true);
+		
+		EmbeddedMediaPlayer player = videoPlayer.getMediaPlayer();
+		player.playMedia("http://roboRio-5495-FRC.local:5880/?action=stream", ":network-caching=0");
+		player.setOverlay(mkOverlayWindow(new TestOverlay()));
+		player.enableOverlay(true);
+	}
+	
+	private JWindow mkOverlayWindow(JPanel overlayPanel){
+		JWindow window = new JWindow();
+		window.setContentPane(overlayPanel);
+		window.getRootPane().setOpaque(false);
+		window.setBackground(new Color(0,0,0,0));
+		return window;
 	}
 
 	private void loadVlcNatives(){
