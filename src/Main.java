@@ -1,6 +1,7 @@
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.util.UUID;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -9,12 +10,21 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JWindow;
 
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+
 import com.sun.jna.Native;
 import com.sun.jna.NativeLibrary;
 
 import uk.co.caprica.vlcj.binding.LibVlc;
 import uk.co.caprica.vlcj.component.EmbeddedMediaPlayerComponent;
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
+import uk.co.caprica.vlcj.player.events.MediaPlayerEventType;
 import uk.co.caprica.vlcj.runtime.RuntimeUtil;
 
 public class Main {
@@ -46,9 +56,37 @@ public class Main {
 		frame.setVisible(true);
 		
 		EmbeddedMediaPlayer player = videoPlayer.getMediaPlayer();
-		player.playMedia("http://roboRio-5495-FRC.local:5880/?action=stream", ":network-caching=0");
+		//player.playMedia("http://roboRio-5495-FRC.local:5880/?action=stream", ":network-caching=0");
 		player.setOverlay(mkOverlayWindow(new TestOverlay()));
 		player.enableOverlay(true);
+		
+		try {
+			MqttClient mqtt = new MqttClient("tcp://roboRIO-5495-FRC.local:5888", UUID.randomUUID().toString().substring(0,20), new MemoryPersistence());
+			MqttConnectOptions connOpts = new MqttConnectOptions();
+			connOpts.setCleanSession(true);
+	        mqtt.connect(connOpts);
+	        
+	        mqtt.setCallback(new MqttCallback(){
+				@Override
+				public void connectionLost(Throwable arg0) {
+				}
+
+				@Override
+				public void deliveryComplete(IMqttDeliveryToken arg0) {
+				}
+
+				@Override
+				public void messageArrived(String arg0, MqttMessage arg1) throws Exception {
+					System.out.print("Message Recieved: ");
+					System.out.println(new String(arg1.getPayload()));
+				}            
+            });
+	        mqtt.subscribe("Testing");
+	        System.out.println("Connected to the MQTT butler.");
+		} catch (MqttException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	private JWindow mkOverlayWindow(JPanel overlayPanel){
