@@ -28,7 +28,8 @@ import uk.co.caprica.vlcj.player.events.MediaPlayerEventType;
 import uk.co.caprica.vlcj.runtime.RuntimeUtil;
 
 public class Main {
-
+	int targetOffset = 0;
+	
 	public static void main(String[] args) {
 		Main main = new Main();
 		main.start();
@@ -56,7 +57,7 @@ public class Main {
 		frame.setVisible(true);
 		
 		EmbeddedMediaPlayer player = videoPlayer.getMediaPlayer();
-		//player.playMedia("http://roboRio-5495-FRC.local:5880/?action=stream", ":network-caching=0");
+		player.playMedia("http://roboRio-5495-FRC.local:5880/?action=stream", ":network-caching=0");
 		player.setOverlay(mkOverlayWindow(new TestOverlay()));
 		player.enableOverlay(true);
 		
@@ -77,11 +78,19 @@ public class Main {
 
 				@Override
 				public void messageArrived(String arg0, MqttMessage arg1) throws Exception {
-					System.out.print("Message Recieved: ");
-					System.out.println(new String(arg1.getPayload()));
+					if (arg0.contentEquals("5495.targetting")) {
+						System.out.println("targetting: " + new String(arg1.getPayload()));
+						//this.targetOffset = Integer.parseInt(new String(arg1.getPayload())); 
+					} else {
+						System.out.print("Message Recieved: ");
+						System.out.println(new String(arg1.getPayload()));
+					}
 				}            
             });
 	        mqtt.subscribe("Testing");
+	        mqtt.subscribe("5495.targetting");
+	        
+	        mqtt.publish("Testing", new MqttMessage("Testing".getBytes()));
 	        System.out.println("Connected to the MQTT butler.");
 		} catch (MqttException e) {
 			// TODO Auto-generated catch block
