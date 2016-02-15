@@ -1,3 +1,4 @@
+package org.usfirst.frc.team5495;
 import javax.swing.JLabel;
 
 public class ValueLabel extends JLabel{
