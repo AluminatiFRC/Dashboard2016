@@ -1,4 +1,5 @@
 package org.usfirst.frc.team5495;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 
@@ -8,6 +9,9 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JWindow;
+
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import com.sun.jna.Native;
 import com.sun.jna.NativeLibrary;
@@ -20,7 +24,8 @@ import uk.co.caprica.vlcj.runtime.RuntimeUtil;
 
 public class Main {
 	int targetOffset = 0;
-	
+	JSONParser parser = new JSONParser();
+
 	public static void main(String[] args) {
 		Main main = new Main();
 		main.start();
@@ -32,51 +37,72 @@ public class Main {
 
 		EmbeddedMediaPlayerComponent videoPlayer = new EmbeddedMediaPlayerComponent();
 		frame.add(videoPlayer);
-		
+
 		JMenuBar menuBar = new JMenuBar();
 		JMenu file = new JMenu("File");
 		JMenuItem quit = new JMenuItem("Quit");
-		quit.addActionListener(ae -> { System.exit(0); });
+		quit.addActionListener(ae -> {
+			System.exit(0);
+		});
 		file.add(quit);
 		menuBar.add(file);
-		
-		BarGraph graph = new BarGraph(0, 255);
-		frame.add(graph,BorderLayout.EAST);
-		
+
+		BarGraph graph = new BarGraph(0, 255, 50);
+		frame.add(graph, BorderLayout.EAST);
+
 		frame.setJMenuBar(menuBar);
 		frame.setUndecorated(true);
 		frame.setSize(1600, 660);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setVisible(true);
-		
+
 		EmbeddedMediaPlayer player = videoPlayer.getMediaPlayer();
-		player.playMedia("http://roboRio-5495-FRC.local:5880/?action=stream",
-				"network-caching=0", "drop-late-frames","skip-frames");
+		//player.playMedia("http://roboRio-5495-FRC.local:5880/?action=stream", 
+				//":network-caching=0", ":drop-late-frames", ":skip-frames", ":no-audio", ":live-caching=0");
 		player.setOverlay(mkOverlayWindow(new TestOverlay()));
-		//player.enableOverlay(true);
-		
+		// player.enableOverlay(true);
+
 		MessageClient client = new MessageClient("tcp://roboRIO-5495-FRC.local:5888");
 		client.addMessageListener("5495.targetting", (String message) -> {
-			System.out.println(message);
+			JSONObject object = parse(message);
+			boolean target = (boolean) object.get("hasTarget");
+			if (target == true) {
+				double distance = (Double) object.get("targetDistance");
+				graph.setValue((int) distance);
+			} else {
+				graph.setValue((graph.getUpper()-graph.getLower())/2);
+			}
+			
 		});
 		client.connect();
-		
+
 		client.publish("Testing", "Testing");
 	}
-	
-	private JWindow mkOverlayWindow(JPanel overlayPanel){
+
+	private JWindow mkOverlayWindow(JPanel overlayPanel) {
 		JWindow window = new JWindow();
 		window.setContentPane(overlayPanel);
 		window.getRootPane().setOpaque(false);
-		window.setBackground(new Color(0,0,0,0));
+		window.setBackground(new Color(0, 0, 0, 0));
 		return window;
 	}
 
-	private void loadVlcNatives(){
-		//This may have to change depending on your system.
-		String nativePath = System.getProperty("os.arch").contains("64") ?  
-				"C:\\Program Files\\VideoLAN\\VLC" :  "C:\\Program Files (x86)\\VideoLAN\\VLC";
+	private void loadVlcNatives() {
+		// This may have to change depending on your system.
+		String nativePath = System.getProperty("os.arch").contains("64") ? "C:\\Program Files\\VideoLAN\\VLC"
+				: "C:\\Program Files (x86)\\VideoLAN\\VLC";
 		NativeLibrary.addSearchPath(RuntimeUtil.getLibVlcLibraryName(), nativePath);
-        Native.loadLibrary(RuntimeUtil.getLibVlcLibraryName(), LibVlc.class);
+		Native.loadLibrary(RuntimeUtil.getLibVlcLibraryName(), LibVlc.class);
+	}
+
+	public JSONObject parse(String message) {
+		System.out.println(message);
+		try {
+			JSONObject result = (JSONObject) parser.parse(message);
+			return result;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 }

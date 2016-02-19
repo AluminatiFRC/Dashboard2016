@@ -27,7 +27,6 @@ public class MessageClient implements MqttCallback{
 	private MemoryPersistence persistance; // needed for mqtt
 	private ConnectionState state = ConnectionState.DISCONNECTED;
 	private HashMap<String, Consumer<String>> listeners = new HashMap<>();
-	private String[] subscriptions;
 
 	enum ConnectionState{
 		DISCONNECTED, CONNECTING, CONNECTED
@@ -57,7 +56,7 @@ public class MessageClient implements MqttCallback{
 					state = ConnectionState.CONNECTED;
 					System.out.println("[MQTT] Connected to client sucsessfully");
 					
-					String[] subscrptions = listeners.keySet().stream().toArray(size -> new String[size]);
+					String[] subscriptions = listeners.keySet().stream().toArray(size -> new String[size]);
 					client.subscribe(subscriptions);
 				} catch (MqttException e) {
 					System.err.println("[MQTT] MqttException, error connecting. Trying again");
@@ -101,7 +100,12 @@ public class MessageClient implements MqttCallback{
 		if (listener == null){
 			System.out.println("Unhandled message. Topic: " + topic + " Message: " + message);
 		} else {
-			listener.accept(new String(message.getPayload()));
+			try{
+				listener.accept(new String(message.getPayload()));
+			} catch (Exception e){
+				//We must catch any errors here, or the client will disconnect
+				e.printStackTrace();
+			}
 		}
 	}
 	
