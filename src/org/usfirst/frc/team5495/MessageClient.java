@@ -1,13 +1,9 @@
 package org.usfirst.frc.team5495;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
-import javax.swing.Action;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -19,13 +15,8 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.usfirst.frc.team5495.MessageClient.ConnectionState;
 
-/**
- * If there is no connection, messages are ignored. Does not work with wildcard topics yet.
- * This sits on top of the MQTT protocol.
- * @author shsrobotics
- *
- */
 public class MessageClient implements MqttCallback {
 	private static final int CONNECT_RETRY_TIME_MS = 1000;
 	private String brokerAddress;
@@ -166,6 +157,10 @@ public class MessageClient implements MqttCallback {
 	
 	public String getMessage(String topic){
 		return messageBuffer.get(topic);
+	}
+	
+	public double getProperty(String name){
+		return properties.get(name);
 	}
 	
 	public JSONObject getJsonObject(String topic){

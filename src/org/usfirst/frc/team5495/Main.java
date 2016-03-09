@@ -83,9 +83,12 @@ public class Main {
 		topPanel.add(picture, BorderLayout.EAST);
 		
 		propertiesPanel = new PropertiesPanel(client);
-		propertiesPanel.addSlider("proximity", 100);
-		propertiesPanel.addSlider("max-speed", 120);
-		propertiesPanel.addSlider("targeting-rotation-rate", 1);
+		propertiesPanel.addSlider("target/distance/max", 250);
+		propertiesPanel.addSlider("target/distance/min", 250);
+		propertiesPanel.addSlider("target/rotation/speed", 1);
+		propertiesPanel.addSlider("target/distance/tolerance", .15);
+		propertiesPanel.addSlider("drive/move-forward/speed", 1);
+		propertiesPanel.addSlider("drive/crawl/speed", 1);
 		sidePanel.add(propertiesPanel, BorderLayout.CENTER);
 		
 		BarGraph graph = new BarGraph(0, 255, 50, 4);
