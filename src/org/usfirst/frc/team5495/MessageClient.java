@@ -11,11 +11,11 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.MqttTopic;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.usfirst.frc.team5495.MessageClient.ConnectionState;
 
 public class MessageClient implements MqttCallback {
 	private static final int CONNECT_RETRY_TIME_MS = 1000;
@@ -73,6 +73,8 @@ public class MessageClient implements MqttCallback {
 					
 					String[] listenerSubscriptions = listeners.keySet().stream().toArray(size -> new String[size]);
 					client.subscribe(listenerSubscriptions);
+					
+					client.subscribe(PROPERTIES_TOPIC + "#");
 
 				} catch (MqttException e) {
 					System.err.println("[MQTT] MqttException, error connecting. Trying again");
