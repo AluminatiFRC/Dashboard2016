@@ -11,6 +11,8 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.swing.Action;
@@ -24,6 +26,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
+import javax.swing.JTextArea;
 import javax.swing.JWindow;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
@@ -91,11 +94,21 @@ public class Main {
 		propertiesPanel.addSlider("drive/crawl/speed", 1);
 		sidePanel.add(propertiesPanel, BorderLayout.CENTER);
 		
+		JPanel diagnostics = new JPanel();
+		diagnostics.setLayout(new BoxLayout(diagnostics, BoxLayout.X_AXIS));
+		
+		JTextArea telemetryDisplay = new JTextArea();
+		telemetryDisplay.setLineWrap(true);
+		telemetryDisplay.setSize(200, 400);
+		diagnostics.add(telemetryDisplay);
+		
 		BarGraph graph = new BarGraph(0, 255, 50, 4);
-		frame.add(graph, BorderLayout.EAST);
+		diagnostics.add(graph);
+		
 		client.addMessageListener("robot/vision/telemetry", (String message) -> {
 			System.out.println(message);
 			JSONObject object = parse(message);
+			telemetryDisplay.setText(object.toJSONString());
 			boolean target = (boolean) object.get("hasTarget");
 			if (target == true) {
 				double distance = (Double) object.get("targetDistance");
@@ -104,6 +117,8 @@ public class Main {
 				graph.setValue((graph.getUpper()-graph.getLower())/2);
 			}
 		});
+		
+		frame.add(diagnostics, BorderLayout.EAST);
 		
 		JMenuBar menuBar = new JMenuBar();
 		JMenu file = new JMenu("File");
