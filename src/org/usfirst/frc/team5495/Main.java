@@ -89,7 +89,7 @@ public class Main {
 		propertiesPanel = new PropertiesPanel(client);
 		sidePanel.add(propertiesPanel, BorderLayout.CENTER);
 		
-		BarGraph graph = new BarGraph(0, 255, 50);
+		BarGraph graph = new BarGraph(0, 255, 50, 4);
 		frame.add(graph, BorderLayout.EAST);
 		client.addMessageListener("robot/vision/telemetry", (String message) -> {
 			System.out.println(message);

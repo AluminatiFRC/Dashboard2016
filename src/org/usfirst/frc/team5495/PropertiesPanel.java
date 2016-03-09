@@ -36,10 +36,13 @@ public class PropertiesPanel extends JPanel {
 	private void loadProperties() {
 		robotProperties = new Properties();
 		propertiesPath = FileSystems.getDefault().getPath("configuration","config.properties");
-
+		
 		try {
+			if (!Files.exists(propertiesPath.getParent()))
+				Files.createDirectories(propertiesPath.getParent());
 			if (!Files.exists(propertiesPath))
 				Files.createFile(propertiesPath);
+			
 			robotProperties.load(Files.newBufferedReader(propertiesPath));
 		} catch (IOException e) {
 			e.printStackTrace();
