@@ -21,12 +21,14 @@ import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
  * @author shsrobotics
  *
  */
-public class MessageClient implements MqttCallback{
+public class MessageClient implements MqttCallback {
+	private static final String PROPERTIES_TOPIC = "robot/properties/";
 	private String brokerAddress;
 	private MqttClient client;
 	private MemoryPersistence persistance; // needed for mqtt
 	private ConnectionState state = ConnectionState.DISCONNECTED;
 	private HashMap<String, Consumer<String>> listeners = new HashMap<>();
+	private HashMap<String, Double> properties = new HashMap<>();
 
 	enum ConnectionState{
 		DISCONNECTED, CONNECTING, CONNECTED
@@ -70,17 +72,26 @@ public class MessageClient implements MqttCallback{
 		}).start();
 	}
 
-	public void publish (String topic, String message) {
+	public void publish(String topic, MqttMessage message) {
 		if (client != null) {
 			try {
-				client.publish(topic, new MqttMessage(message.getBytes()));
+				client.publish(topic, message);
 			} catch (MqttException e) {
 				System.err.println("[MQTT] Failed to publish message: "+ topic + " "+ message);
 			}
 		} else {
 			System.err.println("[MQTT] Client not found, unable to publish message.");
 		}
-		
+	}
+	
+	public void publish(String topic, String message){
+		publish(topic, new MqttMessage(message.getBytes()));
+	}
+
+	public void publishPorperty(String name, double value) {
+		MqttMessage message = new MqttMessage(String.valueOf(value).getBytes());
+		message.setRetained(true);
+		publish(PROPERTIES_TOPIC + name, message);  
 	}
 	
 	@Override
@@ -106,6 +117,9 @@ public class MessageClient implements MqttCallback{
 				//We must catch any errors here, or the client will disconnect
 				e.printStackTrace();
 			}
+		}
+		if (topic.startsWith(PROPERTIES_TOPIC)){
+			properties.put(topic.substring(PROPERTIES_TOPIC.length()), Double.valueOf(message.getPayload().toString()));
 		}
 	}
 	

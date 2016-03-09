@@ -4,6 +4,13 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -30,12 +37,10 @@ import uk.co.caprica.vlcj.player.events.MediaPlayerEventType;
 import uk.co.caprica.vlcj.runtime.RuntimeUtil;
 
 public class Main {
-	int targetOffset = 0;
-	JSONParser parser = new JSONParser();
-	private JPanel controlLabels;
-	private JPanel controlSliders;
-	private JPanel controlValues;
+	private JSONParser parser = new JSONParser();
 	private MessageClient client;
+	private Properties robotProperties;
+	private PropertiesPanel propertiesPanel;
 
 	public static void main(String[] args) {
 		Main main = new Main();
@@ -44,7 +49,6 @@ public class Main {
 
 	private void start() {
 		loadVlcNatives();
-
 
 		client = new MessageClient("tcp://roboRIO-5495-FRC.local:5888");
 		client.connect();
@@ -63,46 +67,27 @@ public class Main {
 		JMenu file = new JMenu("File");
 		JMenuItem quit = new JMenuItem("Quit");
 		quit.addActionListener(ae -> {
-			System.exit(0);
+			frame.dispose();
 		});
 		file.add(quit);
 		menuBar.add(file);
 		
-		JPanel cPanel = new JPanel();
-		cPanel.setLayout(new BoxLayout(cPanel, BoxLayout.Y_AXIS));
-		frame.add(cPanel, BorderLayout.WEST);
+		JPanel sidePanel = new JPanel();
+		sidePanel.setLayout(new BorderLayout());
+		frame.add(sidePanel, BorderLayout.WEST);
 		
-		JPanel buttonPanel = new JPanel();
-		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
-		cPanel.add(buttonPanel);
-		
-		JPanel controls = new JPanel();
-		controls.setLayout(new BoxLayout(controls, BoxLayout.X_AXIS));
-		cPanel.add(controls);
-		
-		controlLabels = new JPanel();
-		controlLabels.setLayout(new BoxLayout(controlLabels, BoxLayout.Y_AXIS));
-		controls.add(controlLabels, BorderLayout.EAST);
-		
-		controlSliders = new JPanel();
-		controlSliders.setLayout(new BoxLayout(controlSliders, BoxLayout.Y_AXIS));
-		controls.add(controlSliders);
-		
-		controlValues = new JPanel();
-		controlValues.setLayout(new BoxLayout(controlValues, BoxLayout.Y_AXIS));
-		controls.add(controlValues, BorderLayout.WEST);
-		
-		
-		
-		JButton picture = new JButton("Take A Picture");
-		picture.addActionListener((ActionEvent takePicture) -> {
-			client.publish("robot/vision/screenshot", "picklePayload");
+		JPanel topPanel = new JPanel();
+		topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+		sidePanel.add(topPanel, BorderLayout.NORTH);
+				
+		JButton picture = new JButton("Take a Picture");
+		picture.addActionListener((ActionEvent event) -> {
+			client.publish("robot/vision/screenshot", "dummy");
 		});
-		buttonPanel.add(picture, BorderLayout.EAST);
+		topPanel.add(picture, BorderLayout.EAST);
 		
-		addSlider("proximity", 100);
-		addSlider("max-speed", 120);
-		addSlider("targeting-rotation-rate", 1);
+		propertiesPanel = new PropertiesPanel(client);
+		sidePanel.add(propertiesPanel, BorderLayout.CENTER);
 		
 		BarGraph graph = new BarGraph(0, 255, 50);
 		frame.add(graph, BorderLayout.EAST);
@@ -123,27 +108,14 @@ public class Main {
 		frame.setSize(1600, 660);
 		frame.setLocation(0, 0);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setVisible(true);
-	}
-
-	private void addSlider(String name, int maximum){
-		JLabel label = new JLabel();
-		label.setText(name + ": ");
-		controlLabels.add(label);
-				
-		JSlider slider = new JSlider();
-		slider.setMaximum(maximum * 100);
-		controlSliders.add(slider);
-		
-		JLabel valueLabel = new JLabel();
-		valueLabel.setText(String.valueOf(slider.getValue() / 100.0));
-		valueLabel.setPreferredSize(new Dimension(40, valueLabel.getHeight()));
-		controlValues.add(valueLabel);
-		
-		slider.addChangeListener((ChangeEvent event) -> {
-			client.publish("robot/setting/" + name, String.valueOf((slider.getValue() / 100.0)));
-			valueLabel.setText(String.valueOf(slider.getValue() / 100.0));
+		frame.addWindowListener(new WindowAdapter() { // Cleanup
+            @Override
+            public void windowClosed(WindowEvent e) {
+				propertiesPanel.save();
+				System.exit(0);
+            }
 		});
+		frame.setVisible(true);
 	}
 	
 	private JWindow mkOverlayWindow(JPanel overlayPanel) {
