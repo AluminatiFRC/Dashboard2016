@@ -1,5 +1,8 @@
 package org.usfirst.frc.team5495;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -13,30 +16,45 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  * If there is no connection, messages are ignored. Does not work with wildcard topics yet.
+ * This sits on top of the MQTT protocol.
  * @author shsrobotics
  *
  */
 public class MessageClient implements MqttCallback {
-	private static final String PROPERTIES_TOPIC = "robot/properties/";
+	private static final int CONNECT_RETRY_TIME_MS = 1000;
 	private String brokerAddress;
 	private MqttClient client;
 	private MemoryPersistence persistance; // needed for mqtt
 	private ConnectionState state = ConnectionState.DISCONNECTED;
+	
+	private static final String PROPERTIES_TOPIC = "robot/properties/";
+	
 	private HashMap<String, Consumer<String>> listeners = new HashMap<>();
 	private HashMap<String, Double> properties = new HashMap<>();
+	private HashMap<String, String> messageBuffer = new HashMap<>();
+	private List<String> polledTopics;
+	private JSONParser parser = new JSONParser();
 
 	enum ConnectionState{
 		DISCONNECTED, CONNECTING, CONNECTED
 	}
 	
-	public MessageClient(String brokerAddress) {
+	/**
+	 * Creates a new MessageClient. Give this constructor a list of topics you would like to poll 
+	 * at a later time.
+	 * @param brokerAddress
+	 * @param polledTopics
+	 */
+	public MessageClient(String brokerAddress, String... polledTopics) {
 		persistance = new MemoryPersistence();
 		this.brokerAddress = brokerAddress;
+		this.polledTopics = Arrays.asList(polledTopics);
 	}
 
 	public void connect() {
@@ -57,14 +75,19 @@ public class MessageClient implements MqttCallback {
 					client.connect(connOpts);
 					state = ConnectionState.CONNECTED;
 					System.out.println("[MQTT] Connected to client sucsessfully");
+
+					// Subscribe to the topics we want
+					String[] polledSubscriptions = polledTopics.stream().toArray(size -> new String[size]);
+					client.subscribe(polledSubscriptions);
 					
-					String[] subscriptions = listeners.keySet().stream().toArray(size -> new String[size]);
-					client.subscribe(subscriptions);
+					String[] listenerSubscriptions = listeners.keySet().stream().toArray(size -> new String[size]);
+					client.subscribe(listenerSubscriptions);
+
 				} catch (MqttException e) {
 					System.err.println("[MQTT] MqttException, error connecting. Trying again");
 					
 					try {
-						Thread.sleep(1000);
+						Thread.sleep(CONNECT_RETRY_TIME_MS);
 					} catch (Exception e1) {
 					}
 				}
@@ -107,19 +130,26 @@ public class MessageClient implements MqttCallback {
 
 	@Override
 	public void messageArrived(String topic, MqttMessage message) throws Exception {
+		String messageString = message.getPayload().toString();
+		
 		Consumer<String> listener = listeners.get(topic);
 		if (listener == null){
 			System.out.println("Unhandled message. Topic: " + topic + " Message: " + message);
 		} else {
 			try{
-				listener.accept(new String(message.getPayload()));
+				listener.accept(messageString);
 			} catch (Exception e){
-				//We must catch any errors here, or the client will disconnect
+				//We must catch any errors from the listener here, or the mqtt client will disconnect
 				e.printStackTrace();
 			}
 		}
+		
 		if (topic.startsWith(PROPERTIES_TOPIC)){
-			properties.put(topic.substring(PROPERTIES_TOPIC.length()), Double.valueOf(message.getPayload().toString()));
+			properties.put(topic.substring(PROPERTIES_TOPIC.length()), Double.valueOf(messageString));
+		}
+		
+		if (polledTopics.contains(topic)){
+			messageBuffer.put(topic, messageString);
 		}
 	}
 	
@@ -132,5 +162,21 @@ public class MessageClient implements MqttCallback {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	public String getMessage(String topic){
+		return messageBuffer.get(topic);
+	}
+	
+	public JSONObject getJsonObject(String topic){
+    	JSONObject obj;
+    	try {
+			obj = (JSONObject) parser.parse(getMessage(topic));
+		} catch (ParseException e) {
+			e.printStackTrace();
+			return null;
+		}
+    	
+    	return obj;
 	}
 }

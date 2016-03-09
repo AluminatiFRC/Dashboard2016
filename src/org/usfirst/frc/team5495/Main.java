@@ -10,10 +10,13 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
+import javax.swing.Action;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -22,6 +25,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JWindow;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 
 import org.json.simple.JSONObject;
@@ -62,18 +66,10 @@ public class Main {
 		player.setOverlay(mkOverlayWindow(new TestOverlay()));
 		// player.enableOverlay(true);
 		frame.add(videoPlayer);
-
-		JMenuBar menuBar = new JMenuBar();
-		JMenu file = new JMenu("File");
-		JMenuItem quit = new JMenuItem("Quit");
-		quit.addActionListener(ae -> {
-			frame.dispose();
-		});
-		file.add(quit);
-		menuBar.add(file);
 		
 		JPanel sidePanel = new JPanel();
 		sidePanel.setLayout(new BorderLayout());
+		sidePanel.setBorder(new EmptyBorder(4,4,4,4)); // For padding
 		frame.add(sidePanel, BorderLayout.WEST);
 		
 		JPanel topPanel = new JPanel();
@@ -87,6 +83,9 @@ public class Main {
 		topPanel.add(picture, BorderLayout.EAST);
 		
 		propertiesPanel = new PropertiesPanel(client);
+		propertiesPanel.addSlider("proximity", 100);
+		propertiesPanel.addSlider("max-speed", 120);
+		propertiesPanel.addSlider("targeting-rotation-rate", 1);
 		sidePanel.add(propertiesPanel, BorderLayout.CENTER);
 		
 		BarGraph graph = new BarGraph(0, 255, 50, 4);
@@ -102,6 +101,39 @@ public class Main {
 				graph.setValue((graph.getUpper()-graph.getLower())/2);
 			}
 		});
+		
+		JMenuBar menuBar = new JMenuBar();
+		JMenu file = new JMenu("File");
+				
+		JMenuItem save = new JMenuItem("Save Properties...");
+		save.addActionListener(ae -> {
+			JFileChooser fc = new JFileChooser(Paths.get(".").toFile());
+	        int returnVal = fc.showSaveDialog(frame);
+
+	        if (returnVal == JFileChooser.APPROVE_OPTION) {
+	        	propertiesPanel.save(Paths.get(fc.getSelectedFile().toURI()));
+	        } 
+		});
+		file.add(save);
+		
+		JMenuItem load = new JMenuItem("Load Properties...");
+		load.addActionListener(ae -> {
+			JFileChooser fc = new JFileChooser(Paths.get(".").toFile());
+	        int returnVal = fc.showOpenDialog(frame);
+
+	        if (returnVal == JFileChooser.APPROVE_OPTION) {
+	        	propertiesPanel.load(Paths.get(fc.getSelectedFile().toURI()));
+	        } 
+		});
+		file.add(load);
+
+		JMenuItem quit = new JMenuItem("Quit");
+		quit.addActionListener(ae -> {
+			frame.dispose();
+		});
+		file.add(quit);
+		
+		menuBar.add(file);
 		
 		frame.setJMenuBar(menuBar);
 		frame.setUndecorated(true);
