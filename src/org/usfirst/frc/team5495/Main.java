@@ -2,6 +2,7 @@ package org.usfirst.frc.team5495;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 
 import javax.swing.BoxLayout;
@@ -33,6 +34,7 @@ public class Main {
 	JSONParser parser = new JSONParser();
 	private JPanel controlLabels;
 	private JPanel controlSliders;
+	private JPanel controlValues;
 	private MessageClient client;
 
 	public static void main(String[] args) {
@@ -80,17 +82,23 @@ public class Main {
 		
 		controlLabels = new JPanel();
 		controlLabels.setLayout(new BoxLayout(controlLabels, BoxLayout.Y_AXIS));
-		controls.add(controlLabels, BorderLayout.WEST);
+		controls.add(controlLabels, BorderLayout.EAST);
 		
 		controlSliders = new JPanel();
 		controlSliders.setLayout(new BoxLayout(controlSliders, BoxLayout.Y_AXIS));
-		controls.add(controlSliders, BorderLayout.EAST);
-
+		controls.add(controlSliders);
+		
+		controlValues = new JPanel();
+		controlValues.setLayout(new BoxLayout(controlValues, BoxLayout.Y_AXIS));
+		controls.add(controlValues, BorderLayout.WEST);
+		
+		
+		
 		JButton picture = new JButton("Take A Picture");
 		picture.addActionListener((ActionEvent takePicture) -> {
 			client.publish("robot/vision/screenshot", "picklePayload");
 		});
-		buttonPanel.add(picture);
+		buttonPanel.add(picture, BorderLayout.EAST);
 		
 		addSlider("proximity", 100);
 		addSlider("max-speed", 120);
@@ -127,8 +135,14 @@ public class Main {
 		slider.setMaximum(maximum * 100);
 		controlSliders.add(slider);
 		
+		JLabel valueLabel = new JLabel();
+		valueLabel.setText(String.valueOf(slider.getValue() / 100.0));
+		valueLabel.setPreferredSize(new Dimension(40, valueLabel.getHeight()));
+		controlValues.add(valueLabel);
+		
 		slider.addChangeListener((ChangeEvent event) -> {
 			client.publish("robot/setting/" + name, String.valueOf((slider.getValue() / 100.0)));
+			valueLabel.setText(String.valueOf(slider.getValue() / 100.0));
 		});
 	}
 	
