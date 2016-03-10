@@ -86,6 +86,7 @@ public class Main {
 		propertiesPanel.addSlider("target/distance/max", 250);
 		propertiesPanel.addSlider("target/distance/min", 250);
 		propertiesPanel.addSlider("target/rotation/speed", 1);
+		propertiesPanel.addSlider("target/rotation/tolerance", .5);
 		propertiesPanel.addSlider("target/distance/tolerance", .15);
 		propertiesPanel.addSlider("drive/move-forward/speed", 1);
 		propertiesPanel.addSlider("drive/crawl/speed", 1);
