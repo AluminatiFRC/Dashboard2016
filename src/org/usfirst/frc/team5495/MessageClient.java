@@ -74,7 +74,7 @@ public class MessageClient implements MqttCallback {
 					String[] listenerSubscriptions = listeners.keySet().stream().toArray(size -> new String[size]);
 					client.subscribe(listenerSubscriptions);
 					
-					client.subscribe(PROPERTIES_TOPIC + "#");
+//					client.subscribe(PROPERTIES_TOPIC + "#");
 
 				} catch (MqttException e) {
 					System.err.println("[MQTT] MqttException, error connecting. Trying again");
@@ -123,12 +123,10 @@ public class MessageClient implements MqttCallback {
 
 	@Override
 	public void messageArrived(String topic, MqttMessage message) throws Exception {
-		String messageString = message.getPayload().toString();
+		String messageString = new String(message.getPayload());
 		
 		Consumer<String> listener = listeners.get(topic);
-		if (listener == null){
-			System.out.println("Unhandled message. Topic: " + topic + " Message: " + message);
-		} else {
+		if (listener != null){
 			try{
 				listener.accept(messageString);
 			} catch (Exception e){

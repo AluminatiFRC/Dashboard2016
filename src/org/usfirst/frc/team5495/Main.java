@@ -57,7 +57,7 @@ public class Main {
 	private void start() {
 		loadVlcNatives();
 
-		client = new MessageClient("tcp://roboRIO-5495-FRC.local:5888");
+		client = new MessageClient("tcp://drivercam.lan:5888");
 		client.connect();
 		
 		JFrame frame = new JFrame("5495_Dashboard");
@@ -107,9 +107,9 @@ public class Main {
 		diagnostics.add(graph);
 		
 		client.addMessageListener("robot/vision/telemetry", (String message) -> {
-			System.out.println(message);
+//			System.out.println(message);
 			JSONObject object = parse(message);
-			telemetryDisplay.setText(object.toJSONString());
+			telemetryDisplay.setText(message);
 			boolean target = (boolean) object.get("hasTarget");
 			if (target == true) {
 				double distance = (Double) object.get("targetDistance");
