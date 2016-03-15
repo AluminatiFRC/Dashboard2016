@@ -57,7 +57,7 @@ public class Main {
 	private void start() {
 		loadVlcNatives();
 
-		client = new MessageClient("tcp://drivercam.lan:5888");
+		client = new MessageClient("tcp://10.54.95.85:5888");
 		client.connect();
 		
 		JFrame frame = new JFrame("5495_Dashboard");
@@ -100,7 +100,7 @@ public class Main {
 		
 		JTextArea telemetryDisplay = new JTextArea();
 		telemetryDisplay.setLineWrap(true);
-		telemetryDisplay.setSize(200, 400);
+		telemetryDisplay.setSize(300, 400);
 		diagnostics.add(telemetryDisplay);
 		
 		BarGraph graph = new BarGraph(0, 255, 50, 4);
@@ -114,9 +114,13 @@ public class Main {
 			if (target == true) {
 				double distance = (Double) object.get("targetDistance");
 				graph.setValue((int) distance);
+				
+				double horizError = ((Double) object.get("horizDelta")) - ((distance * .001406397) - .38978127940);
+				telemetryDisplay.append("\nHorizontal Error: " + horizError);
 			} else {
 				graph.setValue((graph.getUpper()-graph.getLower())/2);
 			}
+			
 		});
 		
 		frame.add(diagnostics, BorderLayout.EAST);

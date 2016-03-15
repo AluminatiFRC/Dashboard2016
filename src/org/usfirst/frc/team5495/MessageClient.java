@@ -123,6 +123,7 @@ public class MessageClient implements MqttCallback {
 
 	@Override
 	public void messageArrived(String topic, MqttMessage message) throws Exception {
+		System.out.println("topic: " + topic);
 		String messageString = new String(message.getPayload());
 		
 		Consumer<String> listener = listeners.get(topic);
